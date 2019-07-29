@@ -1,29 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="57d8cd20-5f7e-4588-bc26-0ebc23f85ba2" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/Dockerfile" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/auth/oauth2.go" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/cmd/main.go" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/google_drive/auth.go" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/google_drive/google_drive.go" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/rss/rss.go" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/server/handler/auth_callback.go" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/server/handler/handler.go" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/server/handler/rss.go" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/server/server.go" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/store/bolt/bolt.go" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/store/bolt/file_service.go" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/store/bolt/user_service.go" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/telegram/youpod.go" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/youtube/service.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/go.mod" beforeDir="false" afterPath="$PROJECT_DIR$/go.mod" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/soundcloud/client.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/telegram/telegram.go" beforeDir="false" afterPath="$PROJECT_DIR$/telegram/appender.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/youpod.go" beforeDir="false" afterPath="$PROJECT_DIR$/youpod.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/youtube/client.go" beforeDir="false" />
-    </list>
+    <list default="true" id="57d8cd20-5f7e-4588-bc26-0ebc23f85ba2" name="Default Changelist" comment="" />
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -110,8 +88,8 @@
       <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/store/bolt/file_service.go">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="355">
-              <caret line="147" column="18" lean-forward="true" selection-start-line="147" selection-start-column="18" selection-end-line="147" selection-end-column="18" />
+            <state relative-caret-position="356">
+              <caret line="140" lean-forward="true" selection-start-line="140" selection-end-line="140" />
             </state>
           </provider>
         </entry>
@@ -132,7 +110,7 @@
         <entry file="file://$PROJECT_DIR$/youtube/service.go">
           <provider selected="true" editor-type-id="text-editor">
             <state relative-caret-position="183">
-              <caret line="90" column="42" selection-start-line="90" selection-start-column="42" selection-end-line="90" selection-end-column="42" />
+              <caret line="89" column="42" selection-start-line="89" selection-start-column="42" selection-end-line="89" selection-end-column="42" />
             </state>
           </provider>
         </entry>
@@ -335,7 +313,7 @@
       <option name="presentableId" value="Default" />
       <updated>1563789804585</updated>
       <workItem from="1563789806131" duration="24791000" />
-      <workItem from="1564036801818" duration="43262000" />
+      <workItem from="1564036801818" duration="43673000" />
     </task>
     <task id="LOCAL-00001" summary="gitignore">
       <created>1563799649732</created>
@@ -344,14 +322,22 @@
       <option name="project" value="LOCAL" />
       <updated>1563799649732</updated>
     </task>
-    <option name="localTasksCounter" value="2" />
+    <task id="LOCAL-00002" summary="added saving in google drive">
+      <created>1564393930288</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1564393930288</updated>
+    </task>
+    <option name="localTasksCounter" value="3" />
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="68053000" />
+    <option name="totallyTimeSpent" value="68464000" />
   </component>
   <component name="ToolWindowManager">
     <frame x="0" y="23" width="1680" height="987" extended-state="6" />
+    <editor active="true" />
     <layout>
       <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.25274727" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
@@ -382,7 +368,8 @@
   </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="gitignore" />
-    <option name="LAST_COMMIT_MESSAGE" value="gitignore" />
+    <MESSAGE value="added saving in google drive" />
+    <option name="LAST_COMMIT_MESSAGE" value="added saving in google drive" />
   </component>
   <component name="VgoProject">
     <integration-enabled>true</integration-enabled>
@@ -412,24 +399,6 @@
           <line>33</line>
           <properties />
           <option name="timeStamp" value="38" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
-          <url>file://$PROJECT_DIR$/store/bolt/file_service.go</url>
-          <line>137</line>
-          <properties />
-          <option name="timeStamp" value="39" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
-          <url>file://$PROJECT_DIR$/store/bolt/file_service.go</url>
-          <line>141</line>
-          <properties />
-          <option name="timeStamp" value="40" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
-          <url>file://$PROJECT_DIR$/store/bolt/file_service.go</url>
-          <line>111</line>
-          <properties />
-          <option name="timeStamp" value="41" />
         </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>
@@ -764,7 +733,7 @@
     <entry file="file://$PROJECT_DIR$/youtube/service.go">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="183">
-          <caret line="90" column="42" selection-start-line="90" selection-start-column="42" selection-end-line="90" selection-end-column="42" />
+          <caret line="89" column="42" selection-start-line="89" selection-start-column="42" selection-end-line="89" selection-end-column="42" />
         </state>
       </provider>
     </entry>
@@ -821,8 +790,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/store/bolt/file_service.go">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="355">
-          <caret line="147" column="18" lean-forward="true" selection-start-line="147" selection-start-column="18" selection-end-line="147" selection-end-column="18" />
+        <state relative-caret-position="356">
+          <caret line="140" lean-forward="true" selection-start-line="140" selection-end-line="140" />
         </state>
       </provider>
     </entry>
