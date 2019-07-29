@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	gdrive "github.com/htim/youpod/google_drive"
 	"github.com/htim/youpod/rss"
 	"github.com/htim/youpod/server"
@@ -13,6 +14,14 @@ import (
 )
 
 func main() {
+
+	clientID := flag.String("google_client_id", "", "")
+	clientSecret := flag.String("google_client_secret", "", "")
+	redirectUrl := flag.String("google_redirect_url", "", "")
+
+	telegramBotApiKey := flag.String("telegram_bot_api_key", "", "")
+
+	flag.Parse()
 
 	log.SetOutput(os.Stdout)
 	log.SetLevel(log.DebugLevel)
@@ -33,15 +42,11 @@ func main() {
 		log.WithError(err).Fatal("cannot init UserService")
 	}
 
-	clientID := "101230901477-0g3vef4t1f4rc2urrf0sqcc0cu0l36qd.apps.googleusercontent.com"
-	clientSecret := "sVnwe-EtkOUSaUVwV9vKAtKn"
-	redirectUrl := "http://localhost:9000/gdrive/callback"
-
 	googleDriveClient := gdrive.NewClient(
 		userService,
-		clientID,
-		clientSecret,
-		redirectUrl,
+		*clientID,
+		*clientSecret,
+		*redirectUrl,
 	)
 
 	fileService := bolt.NewFileService(client, userService, googleDriveClient, "YouPod")
@@ -53,7 +58,7 @@ func main() {
 
 	rssService := rss.NewService("http://localhost:9000", fileService)
 
-	youPod, err := telegram.NewYouPod("963489157:AAH_ua7yUh4EkOvuHT1TNZmwda6joGQ7gQ4",
+	youPod, err := telegram.NewYouPod(*telegramBotApiKey,
 		userService,
 		fileService,
 		youtubeService,
