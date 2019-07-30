@@ -68,8 +68,18 @@ func (c *Client) Put(user youpod.User, f youpod.File, root string) error {
 	return nil
 }
 
-func (c *Client) Get(owner youpod.User, id string) (io.ReadCloser, error) {
-	return nil, nil
+func (c *Client) Get(user youpod.User, id string) (io.ReadCloser, error) {
+	filesService, err := c.filesService(user)
+	if err != nil {
+		return nil, errors.Wrap(err, "cannot init google drive api client")
+	}
+
+	file, err := filesService.Get(id).Download()
+	if err != nil {
+		return nil, errors.Wrap(err, "cannot download")
+	}
+
+	return file.Body, nil
 }
 
 func (c *Client) FolderExists(user youpod.User, folderID string) (bool, error) {

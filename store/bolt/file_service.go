@@ -117,8 +117,40 @@ func (s *FileService) SaveFile(f youpod.File, u youpod.User) (string, error) {
 	return f.ID, nil
 }
 
-func (s *FileService) GetFile(ID string, u youpod.User) (f youpod.File, err error) {
-	panic("implement me")
+func (s *FileService) GetFile(ID string, u youpod.User) (f *youpod.File, err error) {
+
+	var fileMeta youpod.FileMetadata
+
+	err = s.client.db.View(func(tx *bolt.Tx) error {
+		bkt := tx.Bucket(filesBucket)
+		fmJson := bkt.Get([]byte(ID))
+		if fmJson == nil {
+			return errNoValue
+		}
+		if err = json.Unmarshal(fmJson, &fileMeta); err != nil {
+			return err
+		}
+		return nil
+	})
+
+	if err != nil {
+		if err == errNoValue {
+			return nil, nil
+		}
+
+		return nil, errors.Wrapf(err, "cannot get file metadata (file id: %s)", ID)
+	}
+
+	readCloser, err := s.drive.Get(u, fileMeta.ID)
+	if err != nil {
+		return nil, errors.Wrap(err, "cannot get file from google drive")
+	}
+
+	return &youpod.File{
+		FileMetadata: fileMeta,
+		Content:      readCloser,
+	}, nil
+
 }
 
 func (s *FileService) GetFileMetadata(ID string) (f *youpod.FileMetadata, err error) {

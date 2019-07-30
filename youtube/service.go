@@ -72,10 +72,16 @@ func (d *Service) Download(owner youpod.User, link string) (youpod.File, error) 
 		return youpod.File{}, errors.Wrap(err, "cannot open downloaded file")
 	}
 
+	fileInfo, err := f.Stat()
+	if err != nil {
+		return youpod.File{}, errors.Wrap(err, "cannot get file info")
+	}
+
 	return youpod.File{
 		FileMetadata: youpod.FileMetadata{
-			ID:   id,
-			Name: info.Fulltitle,
+			ID:     id,
+			Name:   info.Fulltitle,
+			Length: fileInfo.Size(),
 		},
 		Content: f,
 	}, nil

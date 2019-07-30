@@ -6,6 +6,7 @@ import (
 	"github.com/htim/youpod"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
+	"strconv"
 	"time"
 )
 
@@ -59,12 +60,27 @@ func (s *Service) UserFeed(user youpod.User, format Format) (string, error) {
 
 	for _, fm := range fmm {
 
-		link := &feeds.Link{Href: fmt.Sprintf("%s/files/%s", s.rootUrl, fm.ID)}
+		if fm.ID == "" {
+			continue
+		}
+
+		fileLink := fmt.Sprintf("%s/files/%s/%s", s.rootUrl, user.Username, fm.ID)
+
+		link := &feeds.Link{
+			Href: fileLink,
+		}
+		enclosure := &feeds.Enclosure{
+			Url:    fileLink,
+			Length: strconv.FormatInt(fm.Length, 10),
+			Type:   "audio/mpeg",
+		}
 
 		item := &feeds.Item{
-			Title:   fm.Name,
-			Link:    link,
-			Created: time.Now(),
+			Id:        fileLink,
+			Title:     fm.Name,
+			Created:   time.Now(),
+			Enclosure: enclosure,
+			Link:      link,
 		}
 
 		items = append(items, item)
@@ -83,7 +99,7 @@ func (s *Service) UserFeed(user youpod.User, format Format) (string, error) {
 		}
 
 	case XML:
-		output, err = feed.ToRss()
+		output, err = feed.ToAtom()
 		if err != nil {
 			return "", errors.Wrap(err, "cannot format rss")
 		}

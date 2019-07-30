@@ -25,8 +25,10 @@ type UserService interface {
 }
 
 type FileMetadata struct {
-	ID   string
-	Name string
+	ID          string
+	Name        string
+	ContentType string
+	Length      int64
 }
 
 type File struct {
@@ -36,7 +38,7 @@ type File struct {
 
 type FileService interface {
 	SaveFile(f File, u User) (ID string, err error)
-	GetFile(ID string, u User) (f File, err error)
+	GetFile(ID string, u User) (f *File, err error)
 	GetFileMetadata(ID string) (m *FileMetadata, err error)
 }
 

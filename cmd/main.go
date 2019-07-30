@@ -1,7 +1,6 @@
 package main
 
 import (
-	"flag"
 	gdrive "github.com/htim/youpod/google_drive"
 	"github.com/htim/youpod/rss"
 	"github.com/htim/youpod/server"
@@ -9,22 +8,29 @@ import (
 	"github.com/htim/youpod/store/bolt"
 	"github.com/htim/youpod/telegram"
 	"github.com/htim/youpod/youtube"
+	"github.com/jessevdk/go-flags"
 	log "github.com/sirupsen/logrus"
 	"os"
 )
 
+var opts struct {
+	ClientID     string `long:"client_id" env:"CLIENT_ID" description:"Google Drive client_id" required:"true"`
+	ClientSecret string `long:"client_secret" env:"CLIENT_SECRET" description:"Google Drive client secret" required:"true"`
+
+	TelegramBotApiKey string `long:"tg_bot_api_key" env:"TG_BOT_API_KEY" description:"Telegram Bot API Key" required:"true"`
+
+	BaseURL string `long:"base_url" env:"BASE_URL" description:"app base url" required:"true"`
+}
+
 func main() {
-
-	clientID := flag.String("google_client_id", "", "")
-	clientSecret := flag.String("google_client_secret", "", "")
-	redirectUrl := flag.String("google_redirect_url", "", "")
-
-	telegramBotApiKey := flag.String("telegram_bot_api_key", "", "")
-
-	flag.Parse()
 
 	log.SetOutput(os.Stdout)
 	log.SetLevel(log.DebugLevel)
+
+	p := flags.NewParser(&opts, flags.Default)
+	if _, err := p.Parse(); err != nil {
+		log.WithError(err).Fatal("cannot parse options")
+	}
 
 	client := bolt.NewClient("youpod.db")
 
@@ -44,9 +50,9 @@ func main() {
 
 	googleDriveClient := gdrive.NewClient(
 		userService,
-		*clientID,
-		*clientSecret,
-		*redirectUrl,
+		opts.ClientID,
+		opts.ClientSecret,
+		opts.BaseURL+"/gdrive/callback",
 	)
 
 	fileService := bolt.NewFileService(client, userService, googleDriveClient, "YouPod")
@@ -56,15 +62,15 @@ func main() {
 		log.WithError(err).Fatal("cannot init youtube service")
 	}
 
-	rssService := rss.NewService("http://localhost:9000", fileService)
+	rssService := rss.NewService(opts.BaseURL, fileService)
 
-	youPod, err := telegram.NewYouPod(*telegramBotApiKey,
+	youPod, err := telegram.NewYouPod(opts.TelegramBotApiKey,
 		userService,
 		fileService,
 		youtubeService,
 		rssService,
 		googleDriveClient,
-		"http://localhost:9000",
+		opts.BaseURL,
 	)
 
 	if err != nil {
@@ -75,6 +81,7 @@ func main() {
 
 	h := handler.Handler{
 		UserService:     userService,
+		FileService:     fileService,
 		GoogleDriveAuth: googleDriveClient,
 		Bot:             youPod,
 		Rss:             rssService,
