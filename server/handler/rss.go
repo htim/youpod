@@ -3,6 +3,7 @@ package handler
 import (
 	"fmt"
 	"github.com/go-chi/chi"
+	"github.com/htim/youpod"
 	"github.com/htim/youpod/rss"
 	log "github.com/sirupsen/logrus"
 	"net/http"
@@ -15,17 +16,18 @@ func (h *Handler) rssFeed(w http.ResponseWriter, r *http.Request) {
 
 	user, err := h.UserService.FindUserByUsername(username)
 	if err != nil {
+
+		if err == youpod.ErrUserNotFound {
+			http.Error(w, "user not found", http.StatusNotFound)
+			return
+		}
+
 		log.WithError(err).Error("cannot find user")
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}
 
-	if user == nil {
-		http.Error(w, "user not found", http.StatusNotFound)
-		return
-	}
-
-	feed, err := h.Rss.UserFeed(*user, rss.XML)
+	feed, err := h.Rss.UserFeed(user, rss.XML)
 	if err != nil {
 		log.WithError(err).WithField("user", user.Username).Error("cannot generate feed")
 		http.Error(w, "internal error", http.StatusInternalServerError)

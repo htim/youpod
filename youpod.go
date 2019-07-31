@@ -15,21 +15,25 @@ type User struct {
 
 	//list of file ids uploaded by user
 	Files []string `json:"files"`
+
+	DefaultStoreType StoreType
 }
 
 type UserService interface {
 	SaveUser(u User) error
-	FindUserByUsername(username string) (*User, error)
-	FindUserByTelegramID(id int64) (*User, error)
+	FindUserByUsername(username string) (User, error)
+	FindUserByTelegramID(id int64) (User, error)
 	AddUserFile(u User, fileID string) error
 }
 
 type FileMetadata struct {
-	ID          string
+	FileID      string
+	TmpFileID   string
 	Name        string
 	ContentType string
 	Length      int64
 	Picture     []byte
+	StoreType   StoreType
 }
 
 type File struct {
@@ -37,13 +41,31 @@ type File struct {
 	Content io.ReadCloser
 }
 
-type FileService interface {
-	SaveFile(f File, u User) (ID string, err error)
-	GetFile(ID string, u User) (f *File, err error)
-	GetFileMetadata(ID string) (m *FileMetadata, err error)
+type MetadataService interface {
+	GetFileMetadata(ID string) (m FileMetadata, err error)
+	SaveFileMetadata(u User, m FileMetadata) (err error)
 }
 
 type YoutubeService interface {
 	Download(owner User, link string) (File, error)
 	Cleanup(File)
+}
+
+type StoreType int
+
+const (
+	UnsetStore StoreType = iota
+	GoogleDrive
+	Dropbox
+)
+
+func (s StoreType) String() string {
+	switch s {
+	case Dropbox:
+		return "Dropbox"
+	case GoogleDrive:
+		return "Google Drive"
+	default:
+		return "Unknown store"
+	}
 }

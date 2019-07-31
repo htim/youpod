@@ -2,7 +2,6 @@ package gdrive
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"github.com/htim/youpod"
 	"github.com/htim/youpod/auth"
@@ -14,11 +13,8 @@ import (
 	"google.golang.org/api/option"
 	"io"
 	"io/ioutil"
-	"net/http"
-	"time"
 )
 
-//gdrive.Client implements both FilesService and auth.OAuth2 to provide token refreshing
 type Client struct {
 	userService youpod.UserService
 	config      oauth2.Config
@@ -43,24 +39,23 @@ func NewClient(
 	}
 }
 
-func (c *Client) Put(user youpod.User, f youpod.File, root string) error {
+func (c *Client) Save(user youpod.User, file youpod.File) (err error) {
 
 	filesService, err := c.filesService(user)
 	if err != nil {
 		return errors.Wrap(err, "cannot init google drive api client")
 	}
 
-	if f.ID == "" {
+	if file.FileID == "" {
 		return errors.New("file id must be specified")
 	}
 
 	driveFile := &drive.File{
-		Id:      f.ID,
-		Name:    f.Name,
-		Parents: []string{root},
+		Id:   file.FileID,
+		Name: file.Name,
 	}
 
-	_, err = filesService.Create(driveFile).Media(f.Content).Do()
+	_, err = filesService.Create(driveFile).Media(file.Content).Do()
 	if err != nil {
 		return errors.Wrap(err, "cannot upload file")
 	}
@@ -68,15 +63,15 @@ func (c *Client) Put(user youpod.User, f youpod.File, root string) error {
 	return nil
 }
 
-func (c *Client) Get(user youpod.User, id string) (io.ReadCloser, error) {
+func (c *Client) Get(user youpod.User, ID string) (io.ReadCloser, error) {
 	filesService, err := c.filesService(user)
 	if err != nil {
 		return nil, errors.Wrap(err, "cannot init google drive api client")
 	}
 
-	file, err := filesService.Get(id).Download()
+	file, err := filesService.Get(ID).Download()
 	if err != nil {
-		return nil, errors.Wrap(err, "cannot download")
+		return nil, errors.Wrap(err, "cannot load file from google drive")
 	}
 
 	return file.Body, nil
@@ -144,7 +139,7 @@ func (c *Client) GenerateID(user youpod.User) (string, error) {
 	}
 	generatedID, err := filesService.GenerateIds().Count(1).Do()
 	if err != nil {
-		return "", errors.Wrap(err, "cannot generate google drive ID")
+		return "", errors.Wrap(err, "cannot generate google drive FileID")
 	}
 	return generatedID.Ids[0], nil
 }
@@ -183,93 +178,44 @@ func tokenSource(token auth.OAuth2Token) (oauth2.TokenSource, error) {
 	return oauth2.StaticTokenSource(&tok), nil
 }
 
-func (c *Client) URL(state string) string {
-	return c.config.AuthCodeURL(state, oauth2.AccessTypeOffline)
+type readSeeker struct {
+	fs       *drive.FilesService
+	fileID   string
+	fileSize int64
+	offset   int64
 }
 
-func (c *Client) Exchange(code string) (auth.OAuth2Token, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
-	token, err := c.config.Exchange(ctx, code)
+func (s *readSeeker) Read(p []byte) (n int, err error) {
+	bytesHeader := fmt.Sprintf("bytes=%d-%d", s.offset, s.offset+int64(len(p)-1))
+	getCall := s.fs.Get(s.fileID)
+	getCall.Header().Set("Range", bytesHeader)
+	response, err := getCall.Download()
 	if err != nil {
-		return auth.OAuth2Token{}, errors.Wrap(err, "cannot exchange code to token for google drive")
+		return 0, err
 	}
-
-	fmt.Println(token.Expiry.String())
-
-	return auth.OAuth2Token{
-		AccessToken:  token.AccessToken,
-		RefreshToken: token.RefreshToken,
-		Expiry:       token.Expiry,
-	}, nil
+	p, err = ioutil.ReadAll(response.Body)
+	if err != nil {
+		return 0, err
+	}
+	s.offset += int64(len(p))
+	return len(p), nil
 }
 
-func (c *Client) RefreshToken(t auth.OAuth2Token) (auth.OAuth2Token, error) {
-
-	src := oauth2.Token{
-		AccessToken:  t.AccessToken,
-		RefreshToken: t.RefreshToken,
-		Expiry:       t.Expiry,
+func (s *readSeeker) Seek(offset int64, whence int) (int64, error) {
+	var abs int64
+	switch whence {
+	case io.SeekStart:
+		abs = offset
+	case io.SeekCurrent:
+		abs = s.offset + offset
+	case io.SeekEnd:
+		abs = s.fileSize + offset
+	default:
+		return 0, errors.New("gdrive.Reader.Seek: invalid whence")
 	}
-
-	tokenSource := c.config.TokenSource(context.Background(), &src)
-
-	newToken, err := tokenSource.Token()
-	if err != nil {
-		return auth.OAuth2Token{}, errors.Wrap(err, "cannot obtain new token")
+	if abs < 0 {
+		return 0, errors.New("gdrive.Reader.Seek: negative position")
 	}
-
-	return auth.OAuth2Token{
-		AccessToken:  newToken.AccessToken,
-		RefreshToken: newToken.RefreshToken,
-		Expiry:       newToken.Expiry,
-	}, nil
-}
-
-func (c *Client) GetUserInfo(t auth.OAuth2Token) (auth.UserInfo, error) {
-
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
-
-	baseUrl := "https://www.googleapis.com/drive/v3/about"
-	req, err := http.NewRequest(http.MethodGet, baseUrl, nil)
-	if err != nil {
-		return auth.UserInfo{}, errors.Wrapf(err, "cannot construct new request: %s", baseUrl)
-	}
-
-	req = req.WithContext(ctx)
-
-	req.Header.Add("Authorization", "Bearer "+t.AccessToken)
-
-	query := req.URL.Query()
-	query.Add("fields", "user")
-	req.URL.RawQuery = query.Encode()
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return auth.UserInfo{}, errors.Wrapf(err, "cannot make request: %s", baseUrl)
-	}
-	defer resp.Body.Close()
-
-	user, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return auth.UserInfo{}, errors.Wrapf(err, "cannot read response: %s", baseUrl)
-	}
-
-	var userShape struct {
-		User struct {
-			DisplayName  string `json:"displayName"`
-			EmailAddress string `json:"emailAddress"`
-		} `json:"user"`
-	}
-
-	if err := json.Unmarshal(user, &userShape); err != nil {
-		return auth.UserInfo{}, errors.Wrapf(err, "cannot unmarshal response: %s", baseUrl)
-	}
-
-	return auth.UserInfo{
-		Email:       userShape.User.EmailAddress,
-		DisplayName: userShape.User.DisplayName,
-	}, nil
-
+	s.offset = abs
+	return abs, nil
 }

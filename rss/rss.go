@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/htim/youpod"
 	"github.com/pkg/errors"
-	log "github.com/sirupsen/logrus"
 	"strconv"
 )
 
@@ -17,10 +16,10 @@ const (
 
 type Service struct {
 	rootUrl     string
-	fileService youpod.FileService
+	fileService youpod.MetadataService
 }
 
-func NewService(rootUrl string, fileService youpod.FileService) *Service {
+func NewService(rootUrl string, fileService youpod.MetadataService) *Service {
 	return &Service{rootUrl: rootUrl, fileService: fileService}
 }
 
@@ -34,17 +33,13 @@ func (s *Service) UserFeed(user youpod.User, format Format) (string, error) {
 
 	for _, fid := range user.Files {
 		m, err := s.fileService.GetFileMetadata(fid)
+		if err == youpod.ErrMetadataNotFound {
+			continue
+		}
 		if err != nil {
 			return "", errors.Wrap(err, "cannot get file metadata")
 		}
-		if m == nil {
-			log.
-				WithField("file", fid).
-				WithField("user", user.Username).
-				Debug("no file metadata")
-			continue
-		}
-		fmm = append(fmm, *m)
+		fmm = append(fmm, m)
 	}
 
 	feed := Feed{
@@ -64,7 +59,7 @@ func (s *Service) UserFeed(user youpod.User, format Format) (string, error) {
 
 	for _, fm := range fmm {
 
-		fileLink := fmt.Sprintf("%s/files/%s/%s", s.rootUrl, user.Username, fm.ID)
+		fileLink := fmt.Sprintf("%s/files/%s/%s", s.rootUrl, user.Username, fm.FileID)
 
 		item := Item{
 			ItunesEpisodeType: "full",

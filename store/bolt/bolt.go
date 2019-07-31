@@ -1,6 +1,7 @@
 package bolt
 
 import (
+	"encoding/json"
 	"time"
 
 	"github.com/pkg/errors"
@@ -62,4 +63,32 @@ func (c *Client) Open() error {
 
 func (c *Client) Close() error {
 	return c.db.Close()
+}
+
+// save marshaled value to key for bucket. Should run in update tx
+func (c *Client) save(bkt *bolt.Bucket, key string, value interface{}) (err error) {
+	if value == nil {
+		return errors.Errorf("cannot save nil value for %s", key)
+	}
+	jdata, jerr := json.Marshal(value)
+	if jerr != nil {
+		return errors.Wrap(jerr, "cannot marshal value")
+	}
+	if err = bkt.Put([]byte(key), jdata); err != nil {
+		return errors.Wrapf(err, "failed to save key %s", key)
+	}
+	return nil
+}
+
+// load and unmarshal json value by key from bucket. Should run in view tx
+func (c *Client) load(bkt *bolt.Bucket, key string, res interface{}) error {
+	value := bkt.Get([]byte(key))
+	if value == nil {
+		return errNoValue
+	}
+
+	if err := json.Unmarshal(value, &res); err != nil {
+		return errors.Wrap(err, "failed to unmarshal")
+	}
+	return nil
 }

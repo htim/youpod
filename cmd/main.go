@@ -1,7 +1,9 @@
 package main
 
 import (
-	gdrive "github.com/htim/youpod/google_drive"
+	"github.com/htim/youpod"
+	"github.com/htim/youpod/media"
+	gdrive "github.com/htim/youpod/media/google_drive"
 	"github.com/htim/youpod/rss"
 	"github.com/htim/youpod/server"
 	"github.com/htim/youpod/server/handler"
@@ -55,7 +57,7 @@ func main() {
 		"http://localhost:9000"+"/gdrive/callback",
 	)
 
-	fileService := bolt.NewFileService(client, userService, googleDriveClient, "YouPod")
+	fileService := bolt.NewMetadataService(client, userService, googleDriveClient, "YouPod")
 
 	youtubeService, err := youtube.NewService()
 	if err != nil {
@@ -64,10 +66,23 @@ func main() {
 
 	rssService := rss.NewService(opts.BaseURL, fileService)
 
+	fileCache, err := media.NewFileSystemCache("tmp")
+	if err != nil {
+		log.WithError(err).Fatal("failed to init file cache")
+	}
+
+	mediaService := media.NewService(
+		fileService,
+		map[youpod.StoreType]media.Store{
+			youpod.GoogleDrive: googleDriveClient,
+		},
+		fileCache,
+	)
+
 	youPod, err := telegram.NewYouPod(opts.TelegramBotApiKey,
 		userService,
-		fileService,
 		youtubeService,
+		mediaService,
 		rssService,
 		googleDriveClient,
 		opts.BaseURL,
@@ -81,7 +96,7 @@ func main() {
 
 	h := handler.Handler{
 		UserService:     userService,
-		FileService:     fileService,
+		MediaService:    mediaService,
 		GoogleDriveAuth: googleDriveClient,
 		Bot:             youPod,
 		Rss:             rssService,

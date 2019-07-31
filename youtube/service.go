@@ -92,10 +92,10 @@ func (d *Service) Download(owner youpod.User, link string) (youpod.File, error) 
 
 	return youpod.File{
 		FileMetadata: youpod.FileMetadata{
-			ID:      id,
-			Name:    info.Fulltitle,
-			Length:  fileInfo.Size(),
-			Picture: picture,
+			TmpFileID: id,
+			Name:      info.Fulltitle,
+			Length:    fileInfo.Size(),
+			Picture:   picture,
 		},
 		Content: f,
 	}, nil
@@ -105,8 +105,8 @@ func (d *Service) Cleanup(f youpod.File) {
 	if err := f.Content.Close(); err != nil {
 		log.WithError(err).Debug("file is already closed")
 	}
-	mp3 := fmt.Sprintf("./%s.%s", f.ID, "mp3")
-	infoJson := fmt.Sprintf("./%s.%s", f.ID, "info.json")
+	mp3 := fmt.Sprintf("./%s.%s", f.TmpFileID, "mp3")
+	infoJson := fmt.Sprintf("./%s.%s", f.TmpFileID, "info.json")
 	if err := os.Remove(mp3); err != nil {
 		log.WithError(err).Debugf("cannot remove file: %s", mp3)
 	}
