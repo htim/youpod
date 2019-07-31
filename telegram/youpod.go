@@ -88,7 +88,7 @@ func (b *YouPod) Run() {
 			if user == nil {
 				username := telegramUserName
 				if username == "" {
-					username = xid.New().String() + "@telegram"
+					username = xid.New().String() + "_telegram"
 				}
 
 				user = &youpod.User{

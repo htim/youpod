@@ -2,12 +2,10 @@ package rss
 
 import (
 	"fmt"
-	"github.com/gorilla/feeds"
 	"github.com/htim/youpod"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	"strconv"
-	"time"
 )
 
 type Format int
@@ -49,61 +47,53 @@ func (s *Service) UserFeed(user youpod.User, format Format) (string, error) {
 		fmm = append(fmm, *m)
 	}
 
-	feed := &feeds.Feed{
-		Title:       "YouPod feed",
-		Link:        &feeds.Link{Href: "http://jmoiron.net/blog"},
-		Description: "YouTube videos converted into podcasts",
-		Created:     time.Now(),
+	feed := Feed{
+		Channel: Channel{
+			Title:        "YouPod feed",
+			Link:         "http://youpod.io",
+			Description:  "YouTube videos converted into a podcasts",
+			ItunesAuthor: "YouPod Bot",
+			ItunesCategory: ItunesCategory{
+				Text: "Technology",
+			},
+			ItunesExplicit: "no",
+		},
 	}
 
-	items := make([]*feeds.Item, 0)
+	items := make([]Item, 0)
 
 	for _, fm := range fmm {
 
-		if fm.ID == "" {
-			continue
-		}
-
 		fileLink := fmt.Sprintf("%s/files/%s/%s", s.rootUrl, user.Username, fm.ID)
 
-		link := &feeds.Link{
-			Href: fileLink,
-		}
-		enclosure := &feeds.Enclosure{
-			Url:    fileLink,
-			Length: strconv.FormatInt(fm.Length, 10),
-			Type:   "audio/mpeg",
-		}
-
-		item := &feeds.Item{
-			Id:        fileLink,
-			Title:     fm.Name,
-			Created:   time.Now(),
-			Enclosure: enclosure,
-			Link:      link,
+		item := Item{
+			ItunesEpisodeType: "full",
+			ItunesTitle:       fm.Name,
+			Description: Description{
+				Content: Content{
+					Text: fm.Name,
+				},
+			},
+			Enclosure: Enclosure{
+				Length: strconv.FormatInt(fm.Length, 10),
+				Type:   "audio/mpeg",
+				Url:    fileLink,
+			},
+			Guid:           fileLink,
+			ItunesExplicit: "no",
 		}
 
 		items = append(items, item)
 	}
 
-	feed.Items = items
+	feed.Channel.Items = items
 
 	var output string
 	var err error
 
-	switch format {
-	case JSON:
-		output, err = feed.ToJSON()
-		if err != nil {
-			return "", errors.Wrap(err, "cannot format rss")
-		}
-
-	case XML:
-		output, err = feed.ToAtom()
-		if err != nil {
-			return "", errors.Wrap(err, "cannot format rss")
-		}
-
+	output, err = feed.ToXML()
+	if err != nil {
+		return "", errors.Wrap(err, "cannot format rss")
 	}
 
 	return output, nil

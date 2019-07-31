@@ -29,6 +29,7 @@ type FileMetadata struct {
 	Name        string
 	ContentType string
 	Length      int64
+	Picture     []byte
 }
 
 type File struct {

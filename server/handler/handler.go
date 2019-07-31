@@ -30,6 +30,7 @@ func (h *Handler) Routes() chi.Router {
 	r.Get("/feed/{username}", h.rssFeed)
 
 	r.Get("/files/{username}/{fileID}", h.serveFile)
+	r.Get("/files/{username}/{fileID}/thumbnail", h.serveFileThumbnail)
 
 	return r
 }

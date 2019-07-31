@@ -52,7 +52,7 @@ func main() {
 		userService,
 		opts.ClientID,
 		opts.ClientSecret,
-		opts.BaseURL+"/gdrive/callback",
+		"http://localhost:9000"+"/gdrive/callback",
 	)
 
 	fileService := bolt.NewFileService(client, userService, googleDriveClient, "YouPod")

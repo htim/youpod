@@ -2,14 +2,19 @@ package youtube
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"github.com/htim/youpod"
 	"github.com/rs/xid"
+	"image"
 	"io/ioutil"
+	"net/http"
 	"os"
 	"os/exec"
+	"strings"
 
+	"github.com/disintegration/imaging"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 )
@@ -52,7 +57,10 @@ func (d *Service) Download(owner youpod.User, link string) (youpod.File, error) 
 	}
 
 	if stderr.Len() > 0 {
-		return youpod.File{}, errors.Errorf("cannot download video: %s", stderr.String())
+		errString := stderr.String()
+		if strings.Contains(errString, "ERROR") {
+			return youpod.File{}, errors.Errorf("cannot download video: %s", errString)
+		}
 	}
 
 	log.Debugf("downloading %s completed: %s", link, stdout.String())
@@ -77,11 +85,17 @@ func (d *Service) Download(owner youpod.User, link string) (youpod.File, error) 
 		return youpod.File{}, errors.Wrap(err, "cannot get file info")
 	}
 
+	picture, err := thumbnailBase64(info.Thumbnail)
+	if err != nil {
+		log.WithError(err).WithField("thumbnail", info.Thumbnail).Error("cannot prepare file thumbnail")
+	}
+
 	return youpod.File{
 		FileMetadata: youpod.FileMetadata{
-			ID:     id,
-			Name:   info.Fulltitle,
-			Length: fileInfo.Size(),
+			ID:      id,
+			Name:    info.Fulltitle,
+			Length:  fileInfo.Size(),
+			Picture: picture,
 		},
 		Content: f,
 	}, nil
@@ -105,4 +119,30 @@ type info struct {
 	Fulltitle   string `json:"fulltitle"`
 	Description string `json:"description"`
 	Uploader    string `json:"uploader"`
+	Thumbnail   string `json:"thumbnail"`
+}
+
+func thumbnailBase64(url string) ([]byte, error) {
+	thumbnail, err := http.Get(url)
+	if err != nil {
+		return nil, errors.Wrap(err, "cannot download")
+	}
+	defer func() {
+		if err := thumbnail.Body.Close(); err != nil {
+			log.WithError(err).WithField("thumbnail", url).Error("cannot close thumbnail response body")
+		}
+	}()
+
+	img, _, err := image.Decode(thumbnail.Body)
+	if err != nil {
+		return nil, errors.Wrap(err, "cannot decode image response body")
+	}
+	resized := imaging.Resize(img, 1000, 1000, imaging.Lanczos)
+
+	buf := &bytes.Buffer{}
+	encoder := base64.NewEncoder(base64.StdEncoding, buf)
+	if _, err = encoder.Write(resized.Pix); err != nil {
+		return nil, errors.Wrap(err, "cannot encode image to base64")
+	}
+	return buf.Bytes(), nil
 }
