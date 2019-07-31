@@ -9,7 +9,7 @@ import (
 	"os"
 )
 
-//FileSystemCache wraps stores and download request file from store to filesystem to support byte-range requests
+//FileSystemCache wraps stores and download requested file from store to filesystem to support byte-range requests
 //Metadata is in in-memory LRU cache
 type FileSystemCache struct {
 	folder string
@@ -17,7 +17,7 @@ type FileSystemCache struct {
 }
 
 func NewFileSystemCache(folder string) (*FileSystemCache, error) {
-	cache, err := lru.NewWithEvict(16, func(key interface{}, value interface{}) {
+	cache, err := lru.NewWithEvict(2, func(key interface{}, value interface{}) {
 		k := key.(string)
 		name := folder + "/" + k
 		if err := os.Remove(name); err != nil {
