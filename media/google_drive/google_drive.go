@@ -63,18 +63,24 @@ func (c *Client) Save(user youpod.User, file youpod.File) (err error) {
 	return nil
 }
 
-func (c *Client) Get(user youpod.User, ID string) (io.ReadCloser, error) {
+func (c *Client) Get(user youpod.User, ID string) (io.ReadSeeker, error) {
 	filesService, err := c.filesService(user)
 	if err != nil {
 		return nil, errors.Wrap(err, "cannot init google drive api client")
 	}
 
-	file, err := filesService.Get(ID).Download()
+	file, err := filesService.Get(ID).Fields("size").Do()
 	if err != nil {
 		return nil, errors.Wrap(err, "cannot load file from google drive")
 	}
 
-	return file.Body, nil
+	return &readSeeker{
+		fs:       filesService,
+		fileID:   ID,
+		fileSize: file.Size,
+		offset:   0,
+	}, nil
+
 }
 
 func (c *Client) FolderExists(user youpod.User, folderID string) (bool, error) {
@@ -185,7 +191,10 @@ type readSeeker struct {
 	offset   int64
 }
 
-func (s *readSeeker) Read(p []byte) (n int, err error) {
+func (s *readSeeker) Read(p []byte) (int, error) {
+	if s.offset >= s.fileSize {
+		return 0, io.EOF
+	}
 	bytesHeader := fmt.Sprintf("bytes=%d-%d", s.offset, s.offset+int64(len(p)-1))
 	getCall := s.fs.Get(s.fileID)
 	getCall.Header().Set("Range", bytesHeader)
@@ -193,11 +202,12 @@ func (s *readSeeker) Read(p []byte) (n int, err error) {
 	if err != nil {
 		return 0, err
 	}
-	p, err = ioutil.ReadAll(response.Body)
+	buf, err := ioutil.ReadAll(response.Body)
 	if err != nil {
 		return 0, err
 	}
-	s.offset += int64(len(p))
+	n := copy(p, buf)
+	s.offset += int64(n)
 	return len(p), nil
 }
 

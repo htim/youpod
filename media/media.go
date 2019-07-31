@@ -12,17 +12,16 @@ import (
 type Store interface {
 	GenerateID(user youpod.User) (ID string, err error)
 	Save(user youpod.User, file youpod.File) (err error)
-	Get(user youpod.User, ID string) (rs io.ReadCloser, err error)
+	Get(user youpod.User, ID string) (rs io.ReadSeeker, err error)
 }
 
 type Service struct {
 	metadataService youpod.MetadataService
 	stores          map[youpod.StoreType]Store
-	cache           *FileSystemCache
 }
 
-func NewService(metadataService youpod.MetadataService, stores map[youpod.StoreType]Store, cache *FileSystemCache) *Service {
-	return &Service{metadataService: metadataService, stores: stores, cache: cache}
+func NewService(metadataService youpod.MetadataService, stores map[youpod.StoreType]Store) *Service {
+	return &Service{metadataService: metadataService, stores: stores}
 }
 
 func (s *Service) SaveFile(u youpod.User, f youpod.File) (string, error) {
@@ -66,12 +65,12 @@ func (s *Service) GetFileContent(user youpod.User, fileID string) (io.ReadSeeker
 		return nil, err
 	}
 
-	file, err := s.cache.GetFileContent(user, store, fileID)
+	rs, err := store.Get(user, fileID)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to get file content")
+		return nil, errors.Wrapf(err, "cannot get file from store (user ID '%s', fileID '%s', store '%s'", user.Username, fileID, metadata.StoreType)
 	}
 
-	return file, nil
+	return rs, nil
 }
 
 func (s *Service) GetFileMetadata(user youpod.User, fileID string) (youpod.FileMetadata, error) {

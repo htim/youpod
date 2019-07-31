@@ -66,17 +66,11 @@ func main() {
 
 	rssService := rss.NewService(opts.BaseURL, fileService)
 
-	fileCache, err := media.NewFileSystemCache("tmp")
-	if err != nil {
-		log.WithError(err).Fatal("failed to init file cache")
-	}
-
 	mediaService := media.NewService(
 		fileService,
 		map[youpod.StoreType]media.Store{
 			youpod.GoogleDrive: googleDriveClient,
 		},
-		fileCache,
 	)
 
 	youPod, err := telegram.NewYouPod(opts.TelegramBotApiKey,
