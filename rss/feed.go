@@ -6,6 +6,7 @@ import (
 
 const (
 	itunesHeader = `<rss version="2.0" xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd" xmlns:content="http://purl.org/rss/1.0/modules/content/">` + "\n"
+	itunesFooter = "\n" + `</rss>`
 )
 
 type Feed struct {
@@ -72,5 +73,5 @@ func (f *Feed) ToXML() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return xml.Header + itunesHeader + string(marshalIndent), nil
+	return xml.Header + itunesHeader + string(marshalIndent) + itunesFooter, nil
 }

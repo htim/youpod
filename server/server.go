@@ -6,7 +6,7 @@ import (
 )
 
 type Server struct {
-	Handler handler.Handler
+	Handler *handler.Handler
 }
 
 func (s *Server) Run(addr string) error {

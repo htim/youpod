@@ -14,7 +14,7 @@ func (h *Handler) rssFeed(w http.ResponseWriter, r *http.Request) {
 
 	username := chi.URLParam(r, "username")
 
-	user, err := h.UserService.FindUserByUsername(username)
+	user, err := h.userService.FindUserByUsername(username)
 	if err != nil {
 
 		if err == youpod.ErrUserNotFound {
@@ -27,7 +27,7 @@ func (h *Handler) rssFeed(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	feed, err := h.Rss.UserFeed(user, rss.XML)
+	feed, err := h.rss.UserFeed(user, rss.XML)
 	if err != nil {
 		log.WithError(err).WithField("user", user.Username).Error("cannot generate feed")
 		http.Error(w, "internal error", http.StatusInternalServerError)

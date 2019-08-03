@@ -32,7 +32,7 @@ type FileMetadata struct {
 	Name        string
 	ContentType string
 	Length      int64
-	Picture     []byte
+	Picture     string //base64
 	StoreType   StoreType
 }
 

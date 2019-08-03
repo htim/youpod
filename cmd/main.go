@@ -2,13 +2,13 @@ package main
 
 import (
 	"github.com/htim/youpod"
+	"github.com/htim/youpod/bot"
 	"github.com/htim/youpod/media"
 	gdrive "github.com/htim/youpod/media/google_drive"
 	"github.com/htim/youpod/rss"
 	"github.com/htim/youpod/server"
 	"github.com/htim/youpod/server/handler"
 	"github.com/htim/youpod/store/bolt"
-	"github.com/htim/youpod/telegram"
 	"github.com/htim/youpod/youtube"
 	"github.com/jessevdk/go-flags"
 	log "github.com/sirupsen/logrus"
@@ -34,18 +34,18 @@ func main() {
 		log.WithError(err).Fatal("cannot parse options")
 	}
 
-	client := bolt.NewClient("youpod.db")
+	boltClient := bolt.NewClient("youpod.db")
 
-	if err := client.Open(); err != nil {
+	if err := boltClient.Open(); err != nil {
 		log.WithError(err).Fatal("cannot open bolt client")
 	}
 	defer func() {
-		if err := client.Close(); err != nil {
+		if err := boltClient.Close(); err != nil {
 			log.WithError(err).Error("cannot close bolt client")
 		}
 	}()
 
-	userService, err := bolt.NewUserService(client)
+	userService, err := bolt.NewUserService(boltClient)
 	if err != nil {
 		log.WithError(err).Fatal("cannot init UserService")
 	}
@@ -57,23 +57,23 @@ func main() {
 		"http://localhost:9000"+"/gdrive/callback",
 	)
 
-	fileService := bolt.NewMetadataService(client, userService, googleDriveClient, "YouPod")
+	metadataService := bolt.NewMetadataService(boltClient, userService, googleDriveClient, "YouPod")
 
 	youtubeService, err := youtube.NewService()
 	if err != nil {
 		log.WithError(err).Fatal("cannot init youtube service")
 	}
 
-	rssService := rss.NewService(opts.BaseURL, fileService)
+	rssService := rss.NewService(opts.BaseURL, metadataService)
 
 	mediaService := media.NewService(
-		fileService,
+		metadataService,
 		map[youpod.StoreType]media.Store{
 			youpod.GoogleDrive: googleDriveClient,
 		},
 	)
 
-	youPod, err := telegram.NewYouPod(opts.TelegramBotApiKey,
+	tgBot, err := bot.NewTelegram(opts.TelegramBotApiKey,
 		userService,
 		youtubeService,
 		mediaService,
@@ -86,14 +86,17 @@ func main() {
 		log.WithError(err).Fatal("cannot init telegram bot")
 	}
 
-	youPod.Run()
+	tgBot.Run()
 
-	h := handler.Handler{
-		UserService:     userService,
-		MediaService:    mediaService,
-		GoogleDriveAuth: googleDriveClient,
-		Bot:             youPod,
-		Rss:             rssService,
+	h, err := handler.NewHandler(userService,
+		mediaService,
+		googleDriveClient,
+		tgBot,
+		rssService,
+	)
+
+	if err != nil {
+		log.WithError(err).Fatal("cannot init server handler")
 	}
 
 	srv := server.Server{

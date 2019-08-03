@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"github.com/htim/youpod"
 	"github.com/rs/xid"
-	"image"
+	"image/jpeg"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -122,10 +122,10 @@ type info struct {
 	Thumbnail   string `json:"thumbnail"`
 }
 
-func thumbnailBase64(url string) ([]byte, error) {
+func thumbnailBase64(url string) (string, error) {
 	thumbnail, err := http.Get(url)
 	if err != nil {
-		return nil, errors.Wrap(err, "cannot download")
+		return "", errors.Wrap(err, "cannot download")
 	}
 	defer func() {
 		if err := thumbnail.Body.Close(); err != nil {
@@ -133,16 +133,15 @@ func thumbnailBase64(url string) ([]byte, error) {
 		}
 	}()
 
-	img, _, err := image.Decode(thumbnail.Body)
+	img, err := jpeg.Decode(thumbnail.Body)
 	if err != nil {
-		return nil, errors.Wrap(err, "cannot decode image response body")
+		return "", errors.Wrap(err, "cannot decode image response body")
 	}
-	resized := imaging.Resize(img, 1000, 1000, imaging.Lanczos)
-
+	resized := imaging.Resize(img, 128, 128, imaging.Lanczos)
 	buf := &bytes.Buffer{}
-	encoder := base64.NewEncoder(base64.StdEncoding, buf)
-	if _, err = encoder.Write(resized.Pix); err != nil {
-		return nil, errors.Wrap(err, "cannot encode image to base64")
+	if err = jpeg.Encode(buf, resized, nil); err != nil {
+		return "", errors.Wrap(err, "cannot encode resized image")
 	}
-	return buf.Bytes(), nil
+
+	return base64.StdEncoding.EncodeToString(buf.Bytes()), nil
 }
