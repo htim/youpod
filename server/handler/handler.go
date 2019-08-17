@@ -3,12 +3,10 @@ package handler
 import (
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
-	"github.com/htim/youpod"
 	"github.com/htim/youpod/auth"
 	"github.com/htim/youpod/bot"
 	"github.com/htim/youpod/cache"
-	"github.com/htim/youpod/media"
-	"github.com/htim/youpod/rss"
+	"github.com/htim/youpod/core"
 	"github.com/pkg/errors"
 )
 
@@ -17,16 +15,24 @@ const (
 )
 
 type Handler struct {
-	userService     youpod.UserService
-	mediaService    *media.Service
+	userService  core.UserRepository
+	rssService   core.RssService
+	mediaService core.MediaService
+
 	googleDriveAuth auth.OAuth2
 	bot             *bot.Telegram
-	rss             *rss.Service
 
 	responseCache *cache.LoadingCache
 }
 
-func NewHandler(userService youpod.UserService, mediaService *media.Service, googleDriveAuth auth.OAuth2, bot *bot.Telegram, rss *rss.Service) (*Handler, error) {
+func NewHandler(
+	userService core.UserRepository,
+	mediaService core.MediaService,
+	rss core.RssService,
+
+	googleDriveAuth auth.OAuth2,
+	bot *bot.Telegram,
+) (*Handler, error) {
 	rspCache, err := cache.NewLoadingCache()
 	if err != nil {
 		return nil, errors.Wrap(err, "cannot init response cache")
@@ -37,7 +43,7 @@ func NewHandler(userService youpod.UserService, mediaService *media.Service, goo
 		mediaService:    mediaService,
 		googleDriveAuth: googleDriveAuth,
 		bot:             bot,
-		rss:             rss,
+		rssService:      rss,
 
 		responseCache: rspCache,
 	}

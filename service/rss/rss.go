@@ -3,33 +3,27 @@ package rss
 import (
 	"fmt"
 	"github.com/htim/youpod"
+	"github.com/htim/youpod/core"
 	"github.com/pkg/errors"
 	"strconv"
 )
 
-type Format int
-
-const (
-	JSON Format = iota
-	XML
-)
-
-type Service struct {
+type service struct {
 	rootUrl     string
-	fileService youpod.MetadataService
+	fileService core.MetadataRepository
 }
 
-func NewService(rootUrl string, fileService youpod.MetadataService) *Service {
-	return &Service{rootUrl: rootUrl, fileService: fileService}
+func NewService(rootUrl string, fileService core.MetadataRepository) core.RssService {
+	return &service{rootUrl: rootUrl, fileService: fileService}
 }
 
-func (s *Service) UserFeedUrl(user youpod.User) string {
+func (s *service) UserFeedUrl(user core.User) string {
 	return fmt.Sprintf("%s/feed/%s", s.rootUrl, user.Username)
 }
 
-func (s *Service) UserFeed(user youpod.User, format Format) (string, error) {
+func (s *service) UserFeed(user core.User) (string, error) {
 
-	fmm := make([]youpod.FileMetadata, 0)
+	fmm := make([]core.Metadata, 0)
 
 	for _, fid := range user.Files {
 		m, err := s.fileService.GetFileMetadata(fid)
@@ -42,7 +36,7 @@ func (s *Service) UserFeed(user youpod.User, format Format) (string, error) {
 		fmm = append(fmm, m)
 	}
 
-	feed := Feed{
+	feed := &Feed{
 		Channel: Channel{
 			Title:        "YouPod feed",
 			Link:         "http://youpod.io",

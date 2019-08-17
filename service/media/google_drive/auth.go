@@ -3,9 +3,9 @@ package gdrive
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"github.com/htim/youpod/auth"
 	"github.com/pkg/errors"
+	log "github.com/sirupsen/logrus"
 	"golang.org/x/oauth2"
 	"io/ioutil"
 	"net/http"
@@ -23,8 +23,6 @@ func (c *Client) Exchange(code string) (auth.OAuth2Token, error) {
 	if err != nil {
 		return auth.OAuth2Token{}, errors.Wrap(err, "cannot exchange code to token for google drive")
 	}
-
-	fmt.Println(token.Expiry.String())
 
 	return auth.OAuth2Token{
 		AccessToken:  token.AccessToken,
@@ -78,7 +76,11 @@ func (c *Client) GetUserInfo(t auth.OAuth2Token) (auth.UserInfo, error) {
 	if err != nil {
 		return auth.UserInfo{}, errors.Wrapf(err, "cannot make request: %s", baseUrl)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			log.WithError(err).Error("cannot close google drive user info response body")
+		}
+	}()
 
 	user, err := ioutil.ReadAll(resp.Body)
 	if err != nil {

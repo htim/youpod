@@ -1,15 +1,14 @@
 package main
 
 import (
-	"github.com/htim/youpod"
 	"github.com/htim/youpod/bot"
-	"github.com/htim/youpod/media"
-	gdrive "github.com/htim/youpod/media/google_drive"
-	"github.com/htim/youpod/rss"
 	"github.com/htim/youpod/server"
 	"github.com/htim/youpod/server/handler"
+	"github.com/htim/youpod/service/media"
+	gdrive "github.com/htim/youpod/service/media/google_drive"
+	"github.com/htim/youpod/service/rss"
+	"github.com/htim/youpod/service/youtube"
 	"github.com/htim/youpod/store/bolt"
-	"github.com/htim/youpod/youtube"
 	"github.com/jessevdk/go-flags"
 	log "github.com/sirupsen/logrus"
 	"os"
@@ -45,36 +44,34 @@ func main() {
 		}
 	}()
 
-	userService, err := bolt.NewUserService(boltClient)
+	userRepository, err := bolt.NewUserRepository(boltClient)
 	if err != nil {
-		log.WithError(err).Fatal("cannot init UserService")
+		log.WithError(err).Fatal("cannot init userRepository")
 	}
 
 	googleDriveClient := gdrive.NewClient(
-		userService,
+		userRepository,
 		opts.ClientID,
 		opts.ClientSecret,
 		"http://localhost:9000"+"/gdrive/callback",
 	)
 
-	metadataService := bolt.NewMetadataService(boltClient, userService, googleDriveClient, "YouPod")
+	metadataRepository := bolt.NewMetadataRepository(boltClient, userRepository, "YouPod")
 
 	youtubeService, err := youtube.NewService()
 	if err != nil {
 		log.WithError(err).Fatal("cannot init youtube service")
 	}
 
-	rssService := rss.NewService(opts.BaseURL, metadataService)
+	rssService := rss.NewService(opts.BaseURL, metadataRepository)
 
 	mediaService := media.NewService(
-		metadataService,
-		map[youpod.StoreType]media.Store{
-			youpod.GoogleDrive: googleDriveClient,
-		},
+		metadataRepository,
+		googleDriveClient,
 	)
 
 	tgBot, err := bot.NewTelegram(opts.TelegramBotApiKey,
-		userService,
+		userRepository,
 		youtubeService,
 		mediaService,
 		rssService,
@@ -88,11 +85,11 @@ func main() {
 
 	tgBot.Run()
 
-	h, err := handler.NewHandler(userService,
+	h, err := handler.NewHandler(userRepository,
 		mediaService,
+		rssService,
 		googleDriveClient,
 		tgBot,
-		rssService,
 	)
 
 	if err != nil {

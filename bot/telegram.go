@@ -5,8 +5,7 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	"github.com/htim/youpod"
 	"github.com/htim/youpod/auth"
-	"github.com/htim/youpod/media"
-	"github.com/htim/youpod/rss"
+	"github.com/htim/youpod/core"
 	"github.com/pkg/errors"
 	"github.com/rs/xid"
 	log "github.com/sirupsen/logrus"
@@ -17,11 +16,10 @@ import (
 type Telegram struct {
 	api *tgbotapi.BotAPI
 
-	userService    youpod.UserService
-	youtubeService youpod.YoutubeService
-
-	mediaService *media.Service
-	rssService   *rss.Service
+	userService    core.UserRepository
+	youtubeService core.YoutubeService
+	mediaService   core.MediaService
+	rssService     core.RssService
 
 	googleDriveAuth auth.OAuth2
 
@@ -33,14 +31,12 @@ type Telegram struct {
 func NewTelegram(
 	telegramToken string,
 
-	userService youpod.UserService,
-	youtubeService youpod.YoutubeService,
-
-	mediaService *media.Service,
-	rssService *rss.Service,
+	userService core.UserRepository,
+	youtubeService core.YoutubeService,
+	mediaService core.MediaService,
+	rssService core.RssService,
 
 	googleDriveAuth auth.OAuth2,
-
 	rootUrl string,
 ) (*Telegram, error) {
 
@@ -92,7 +88,7 @@ func (b *Telegram) Run() {
 						username = xid.New().String() + "_telegram"
 					}
 
-					user = youpod.User{
+					user = core.User{
 						Username:   username,
 						TelegramID: telegramID,
 					}
@@ -128,7 +124,7 @@ func (b *Telegram) Run() {
 					b.Send(chatID, "Failed to save file in your Google Drive. Please try again later")
 					continue
 				}
-				if err = b.userService.AddUserFile(user, id); err != nil {
+				if err = b.userService.AddFileToUser(user, id); err != nil {
 					log.WithError(err).WithField("user", user.Username).Error("failed to update user file list")
 					b.SendInternalError(chatID)
 					continue
@@ -188,6 +184,6 @@ func (b *Telegram) RequestGDriveAuth(chatID int64, url string) {
 	}
 }
 
-func (b *Telegram) generateFeedUrl(user youpod.User) string {
+func (b *Telegram) generateFeedUrl(user core.User) string {
 	return fmt.Sprintf("%s/%s/%s", b.rootUrl, user.Username, xid.New().String())
 }

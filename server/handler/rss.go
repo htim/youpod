@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/go-chi/chi"
 	"github.com/htim/youpod"
-	"github.com/htim/youpod/rss"
 	log "github.com/sirupsen/logrus"
 	"net/http"
 )
@@ -27,7 +26,7 @@ func (h *Handler) rssFeed(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	feed, err := h.rss.UserFeed(user, rss.XML)
+	feed, err := h.rssService.UserFeed(user)
 	if err != nil {
 		log.WithError(err).WithField("user", user.Username).Error("cannot generate feed")
 		http.Error(w, "internal error", http.StatusInternalServerError)

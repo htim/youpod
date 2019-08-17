@@ -48,9 +48,9 @@ func Test(t *testing.T) {
 		},
 	}
 
-	f.Channel.Items = items
+	Items = items
 
-	xml, err := f.ToXML()
+	xml, err := ToXML()
 	if err != nil {
 		fmt.Println(err)
 		return

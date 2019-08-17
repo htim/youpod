@@ -5,7 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"github.com/htim/youpod"
+	"github.com/htim/youpod/core"
 	"github.com/rs/xid"
 	"image/jpeg"
 	"io/ioutil"
@@ -38,7 +38,7 @@ func NewService() (*Service, error) {
 	return &Service{}, nil
 }
 
-func (d *Service) Download(owner youpod.User, link string) (youpod.File, error) {
+func (d *Service) Download(owner core.User, link string) (core.File, error) {
 
 	id := xid.New().String()
 
@@ -53,13 +53,13 @@ func (d *Service) Download(owner youpod.User, link string) (youpod.File, error) 
 	cmd.Stderr = &stderr
 
 	if err := cmd.Run(); err != nil {
-		return youpod.File{}, errors.Wrapf(err, "cannot download video: %s", stderr.String())
+		return core.File{}, errors.Wrapf(err, "cannot download video: %s", stderr.String())
 	}
 
 	if stderr.Len() > 0 {
 		errString := stderr.String()
 		if strings.Contains(errString, "ERROR") {
-			return youpod.File{}, errors.Errorf("cannot download video: %s", errString)
+			return core.File{}, errors.Errorf("cannot download video: %s", errString)
 		}
 	}
 
@@ -67,22 +67,22 @@ func (d *Service) Download(owner youpod.User, link string) (youpod.File, error) 
 
 	infoJson, err := ioutil.ReadFile(fmt.Sprintf("%s.info.json", id))
 	if err != nil {
-		return youpod.File{}, errors.Wrap(err, "cannot read info.json file")
+		return core.File{}, errors.Wrap(err, "cannot read info.json file")
 	}
 
 	var info info
 	if err = json.Unmarshal(infoJson, &info); err != nil {
-		return youpod.File{}, errors.Wrap(err, "cannot unmarshal info.json file")
+		return core.File{}, errors.Wrap(err, "cannot unmarshal info.json file")
 	}
 
 	f, err := os.Open(fmt.Sprintf("%s.mp3", id))
 	if err != nil {
-		return youpod.File{}, errors.Wrap(err, "cannot open downloaded file")
+		return core.File{}, errors.Wrap(err, "cannot open downloaded file")
 	}
 
 	fileInfo, err := f.Stat()
 	if err != nil {
-		return youpod.File{}, errors.Wrap(err, "cannot get file info")
+		return core.File{}, errors.Wrap(err, "cannot get file info")
 	}
 
 	picture, err := thumbnailBase64(info.Thumbnail)
@@ -90,8 +90,8 @@ func (d *Service) Download(owner youpod.User, link string) (youpod.File, error) 
 		log.WithError(err).WithField("thumbnail", info.Thumbnail).Error("cannot prepare file thumbnail")
 	}
 
-	return youpod.File{
-		FileMetadata: youpod.FileMetadata{
+	return core.File{
+		Metadata: core.Metadata{
 			TmpFileID: id,
 			Name:      info.Fulltitle,
 			Length:    fileInfo.Size(),
@@ -101,7 +101,7 @@ func (d *Service) Download(owner youpod.User, link string) (youpod.File, error) 
 	}, nil
 }
 
-func (d *Service) Cleanup(f youpod.File) {
+func (d *Service) Cleanup(f core.File) {
 	if err := f.Content.Close(); err != nil {
 		log.WithError(err).Debug("file is already closed")
 	}

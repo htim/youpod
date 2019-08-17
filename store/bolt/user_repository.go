@@ -2,6 +2,7 @@ package bolt
 
 import (
 	"github.com/htim/youpod"
+	"github.com/htim/youpod/core"
 	"github.com/pkg/errors"
 	bolt "go.etcd.io/bbolt"
 	"strconv"
@@ -11,11 +12,11 @@ var (
 	tgChatIdBucket = []byte("tgChatId")
 )
 
-type UserService struct {
+type userRepository struct {
 	client *Client
 }
 
-func NewUserService(client *Client) (*UserService, error) {
+func NewUserRepository(client *Client) (core.UserRepository, error) {
 
 	if err := client.db.Update(func(tx *bolt.Tx) error {
 		bkt := tx.Bucket(userBucket)
@@ -27,12 +28,12 @@ func NewUserService(client *Client) (*UserService, error) {
 		return nil, errors.Wrap(err, "cannot set up users buckets")
 	}
 
-	return &UserService{
+	return &userRepository{
 		client: client,
 	}, nil
 }
 
-func (s *UserService) SaveUser(u youpod.User) error {
+func (s *userRepository) SaveUser(u core.User) error {
 	err := s.client.db.Update(func(tx *bolt.Tx) error {
 		bkt := tx.Bucket(userBucket)
 		if err := s.client.save(bkt, u.Username, u); err != nil {
@@ -55,8 +56,8 @@ func (s *UserService) SaveUser(u youpod.User) error {
 	return nil
 }
 
-func (s *UserService) FindUserByUsername(username string) (youpod.User, error) {
-	var u youpod.User
+func (s *userRepository) FindUserByUsername(username string) (core.User, error) {
+	var u core.User
 	err := s.client.db.Update(func(tx *bolt.Tx) error {
 		bkt := tx.Bucket(userBucket)
 		if err := s.client.load(bkt, username, &u); err != nil {
@@ -67,16 +68,16 @@ func (s *UserService) FindUserByUsername(username string) (youpod.User, error) {
 
 	if err != nil {
 		if errors.Cause(err) == errNoValue {
-			return youpod.User{}, youpod.ErrUserNotFound
+			return core.User{}, youpod.ErrUserNotFound
 		}
-		return youpod.User{}, err
+		return core.User{}, err
 	}
 
 	return u, nil
 }
 
-func (s *UserService) FindUserByTelegramID(id int64) (youpod.User, error) {
-	var u youpod.User
+func (s *userRepository) FindUserByTelegramID(id int64) (core.User, error) {
+	var u core.User
 
 	err := s.client.db.View(func(tx *bolt.Tx) error {
 
@@ -97,16 +98,16 @@ func (s *UserService) FindUserByTelegramID(id int64) (youpod.User, error) {
 
 	if err != nil {
 		if errors.Cause(err) == errNoValue {
-			return youpod.User{}, youpod.ErrUserNotFound
+			return core.User{}, youpod.ErrUserNotFound
 		}
 
-		return youpod.User{}, err
+		return core.User{}, err
 	}
 
 	return u, nil
 }
 
-func (s *UserService) AddUserFile(u youpod.User, fileID string) error {
+func (s *userRepository) AddFileToUser(u core.User, fileID string) error {
 	user, err := s.FindUserByUsername(u.Username)
 	if err != nil {
 		return errors.Wrap(err, "cannot find user")

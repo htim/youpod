@@ -37,7 +37,6 @@ func (h *Handler) gdriveAuthCallback(w http.ResponseWriter, r *http.Request) {
 	}
 
 	user.GDriveToken = token
-	user.DefaultStoreType = youpod.GoogleDrive
 
 	userInfo, err := h.googleDriveAuth.GetUserInfo(user.GDriveToken)
 	if err != nil {

@@ -3,8 +3,8 @@ package gdrive
 import (
 	"context"
 	"fmt"
-	"github.com/htim/youpod"
 	"github.com/htim/youpod/auth"
+	"github.com/htim/youpod/core"
 	"github.com/pkg/errors"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
@@ -16,16 +16,16 @@ import (
 )
 
 type Client struct {
-	userService youpod.UserService
-	config      oauth2.Config
+	userRepository core.UserRepository
+	config         oauth2.Config
 }
 
 func NewClient(
-	userService youpod.UserService,
+	userRepository core.UserRepository,
 	clientID, clientSecret, redirectUrl string,
 ) *Client {
 	return &Client{
-		userService: userService,
+		userRepository: userRepository,
 		config: oauth2.Config{
 			ClientID:     clientID,
 			ClientSecret: clientSecret,
@@ -39,7 +39,7 @@ func NewClient(
 	}
 }
 
-func (c *Client) Save(user youpod.User, file youpod.File) (err error) {
+func (c *Client) Save(user core.User, file core.File) (err error) {
 
 	filesService, err := c.filesService(user)
 	if err != nil {
@@ -63,7 +63,7 @@ func (c *Client) Save(user youpod.User, file youpod.File) (err error) {
 	return nil
 }
 
-func (c *Client) Get(user youpod.User, ID string) (io.ReadSeeker, error) {
+func (c *Client) Get(user core.User, ID string) (io.ReadSeeker, error) {
 	filesService, err := c.filesService(user)
 	if err != nil {
 		return nil, errors.Wrap(err, "cannot init google drive api client")
@@ -75,7 +75,8 @@ func (c *Client) Get(user youpod.User, ID string) (io.ReadSeeker, error) {
 	}
 
 	return &readSeeker{
-		fs:       filesService,
+		user:     user,
+		client:   c,
 		fileID:   ID,
 		fileSize: file.Size,
 		offset:   0,
@@ -83,7 +84,7 @@ func (c *Client) Get(user youpod.User, ID string) (io.ReadSeeker, error) {
 
 }
 
-func (c *Client) FolderExists(user youpod.User, folderID string) (bool, error) {
+func (c *Client) FolderExists(user core.User, folderID string) (bool, error) {
 	filesService, err := c.filesService(user)
 
 	if err != nil {
@@ -105,7 +106,7 @@ func (c *Client) FolderExists(user youpod.User, folderID string) (bool, error) {
 	return true, nil
 }
 
-func (c *Client) CreateRootFolder(user youpod.User, folderName, folderID string) error {
+func (c *Client) CreateRootFolder(user core.User, folderName, folderID string) error {
 	filesService, err := c.filesService(user)
 
 	if err != nil {
@@ -138,7 +139,7 @@ func (c *Client) CreateRootFolder(user youpod.User, folderName, folderID string)
 	return nil
 }
 
-func (c *Client) GenerateID(user youpod.User) (string, error) {
+func (c *Client) GenerateID(user core.User) (string, error) {
 	filesService, err := c.filesService(user)
 	if err != nil {
 		return "", errors.Wrap(err, "cannot init google drive api")
@@ -150,7 +151,7 @@ func (c *Client) GenerateID(user youpod.User) (string, error) {
 	return generatedID.Ids[0], nil
 }
 
-func (c *Client) filesService(user youpod.User) (*drive.FilesService, error) {
+func (c *Client) filesService(user core.User) (*drive.FilesService, error) {
 
 	if user.GDriveToken.IsExpired() {
 		newToken, err := c.RefreshToken(user.GDriveToken)
@@ -158,7 +159,7 @@ func (c *Client) filesService(user youpod.User) (*drive.FilesService, error) {
 			return nil, errors.Wrapf(err, "cannot refresh google drive token for user: %s", user.Username)
 		}
 		user.GDriveToken = newToken
-		if err = c.userService.SaveUser(user); err != nil {
+		if err = c.userRepository.SaveUser(user); err != nil {
 			return nil, errors.Wrapf(err, "cannot update google drive token for user: %s", user.Username)
 		}
 	}
@@ -185,7 +186,8 @@ func tokenSource(token auth.OAuth2Token) (oauth2.TokenSource, error) {
 }
 
 type readSeeker struct {
-	fs       *drive.FilesService
+	user     core.User
+	client   *Client
 	fileID   string
 	fileSize int64
 	offset   int64
@@ -195,8 +197,14 @@ func (s *readSeeker) Read(p []byte) (int, error) {
 	if s.offset >= s.fileSize {
 		return 0, io.EOF
 	}
+
+	filesService, err := s.client.filesService(s.user)
+	if err != nil {
+		return 0, err
+	}
+
 	bytesHeader := fmt.Sprintf("bytes=%d-%d", s.offset, s.offset+int64(len(p)-1))
-	getCall := s.fs.Get(s.fileID)
+	getCall := filesService.Get(s.fileID)
 	getCall.Header().Set("Range", bytesHeader)
 	response, err := getCall.Download()
 	if err != nil {
