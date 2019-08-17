@@ -18,10 +18,7 @@ type OAuth2Token struct {
 }
 
 func (t OAuth2Token) IsExpired() bool {
-	if time.Now().After(t.Expiry) {
-		return true
-	}
-	return false
+	return time.Now().After(t.Expiry)
 }
 
 type UserInfo struct {

@@ -183,7 +183,3 @@ func (b *Telegram) RequestGDriveAuth(chatID int64, url string) {
 		log.WithError(err).Error("failed to send login at Google Drive button")
 	}
 }
-
-func (b *Telegram) generateFeedUrl(user core.User) string {
-	return fmt.Sprintf("%s/%s/%s", b.rootUrl, user.Username, xid.New().String())
-}
