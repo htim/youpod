@@ -1,0 +1,6 @@
+linters:
+  enable-all: true
+  presets:
+    - bugs
+    - unused
+  fast: false
