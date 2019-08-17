@@ -8,6 +8,7 @@ import (
 	"github.com/htim/youpod/cache"
 	"github.com/htim/youpod/core"
 	"github.com/pkg/errors"
+	"net/http"
 )
 
 const (
@@ -63,8 +64,10 @@ func (h *Handler) Routes() chi.Router {
 	r.Head("/feed/{username}", h.headCheck)
 	r.Get("/feed/{username}", h.rssFeed)
 
-	r.Get("/files/{username}/{fileID}", h.serveFile)
-	r.Get("/files/{username}/{fileID}/thumbnail", h.serveFileThumbnail)
+	r.Get("/files/{username}/{fileID}.mp3", h.serveFile)
+	r.Get("/files/{username}/{fileID}/thumbnail.jpg", h.serveFileThumbnail)
+
+	r.Mount("/", http.FileServer(http.Dir("./assets")))
 
 	return r
 }

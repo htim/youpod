@@ -133,7 +133,7 @@ func (b *Telegram) Run() {
 				b.Send(chatID, "Alright, the podcast based on this video will be available soon")
 				b.Send(chatID, b.rssService.UserFeedUrl(user))
 
-				b.youtubeService.Cleanup(file)
+				//b.youtubeService.Cleanup(file)
 			}
 		}
 	}()

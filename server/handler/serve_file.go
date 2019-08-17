@@ -21,12 +21,12 @@ type fileValue struct {
 	name string
 }
 
-//HEAD /files/{username}/{fileID}
+//HEAD /files/{username}/{fileID}.mp3
 func (h *Handler) headCheck(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-//GET /files/{username}/{fileID}
+//GET /files/{username}/{fileID}.mp3
 func (h *Handler) serveFile(w http.ResponseWriter, r *http.Request) {
 
 	username := chi.URLParam(r, "username")
@@ -89,7 +89,7 @@ func (h *Handler) serveFile(w http.ResponseWriter, r *http.Request) {
 
 }
 
-//GET /files/{username}/{fileID}/thumbnail
+//GET /files/{username}/{fileID}/thumbnail.jpg
 func (h *Handler) serveFileThumbnail(w http.ResponseWriter, r *http.Request) {
 	username := chi.URLParam(r, "username")
 	fileID := chi.URLParam(r, "fileID")

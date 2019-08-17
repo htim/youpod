@@ -50,8 +50,11 @@ type Item struct {
 	Enclosure         Enclosure   `xml:"enclosure"`
 	Guid              string      `xml:"guid"`
 	PubDate           string      `xml:"pubDate"`
-	ItunesDuration    string      `xml:"itunes:duration"`
+	ItunesDuration    string      `xml:"-"`
 	ItunesExplicit    string      `xml:"itunes:explicit"`
+	ItunesImage       ItunesImage `xml:"itunes:image"`
+	ItunesAuthor      string      `xml:"itunes:author"`
+	ItunesSummary     Description `xml:"itunes:summary"`
 }
 
 type Description struct {

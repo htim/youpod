@@ -13,6 +13,7 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"time"
 
 	"github.com/disintegration/imaging"
 	"github.com/pkg/errors"
@@ -94,8 +95,10 @@ func (d *Service) Download(owner core.User, link string) (core.File, error) {
 		Metadata: core.Metadata{
 			TmpFileID: id,
 			Name:      info.Fulltitle,
-			Length:    fileInfo.Size(),
+			Author:    info.Uploader,
+			Size:      fileInfo.Size(),
 			Picture:   picture,
+			CreatedAt: time.Now(),
 		},
 		Content: f,
 	}, nil
@@ -137,7 +140,13 @@ func thumbnailBase64(url string) (string, error) {
 	if err != nil {
 		return "", errors.Wrap(err, "cannot decode image response body")
 	}
-	resized := imaging.Resize(img, 128, 128, imaging.Lanczos)
+
+	min := img.Bounds().Dx()
+	if img.Bounds().Dy() < img.Bounds().Dx() {
+		min = img.Bounds().Dy()
+	}
+
+	resized := imaging.CropCenter(img, min, min)
 	buf := &bytes.Buffer{}
 	if err = jpeg.Encode(buf, resized, nil); err != nil {
 		return "", errors.Wrap(err, "cannot encode resized image")

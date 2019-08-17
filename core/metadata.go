@@ -1,13 +1,17 @@
 package core
 
+import "time"
+
 type (
 	Metadata struct {
 		FileID      string
 		TmpFileID   string
 		Name        string
 		ContentType string
-		Length      int64
+		Author      string
+		Size        int64  //size in bytes
 		Picture     string //base64
+		CreatedAt   time.Time
 	}
 
 	MetadataRepository interface {
