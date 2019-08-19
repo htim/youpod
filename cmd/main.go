@@ -20,7 +20,9 @@ var opts struct {
 
 	TelegramBotApiKey string `long:"tg_bot_api_key" env:"TG_BOT_API_KEY" description:"Telegram Bot API Key" required:"true"`
 
-	BaseURL string `long:"base_url" env:"BASE_URL" description:"app base url" required:"true"`
+	BaseURL          string `long:"base_url" env:"BASE_URL" description:"app base url" required:"true"`
+	BoltRootDir      string `long:"bolt_root_dir" env:"BOLT_ROOT_DIR" description:"directory for boltdb" required:"true"`
+	YoutubeOutputDir string `long:"youtube_output_dir" env:"YOUTUBE_OUTPUT_DIR" description:"tmp directory for youtube" required:"true"`
 }
 
 func main() {
@@ -33,7 +35,7 @@ func main() {
 		log.WithError(err).Fatal("cannot parse options")
 	}
 
-	boltClient := bolt.NewClient("youpod.db")
+	boltClient := bolt.NewClient(opts.BoltRootDir + "/youpod.db")
 
 	if err := boltClient.Open(); err != nil {
 		log.WithError(err).Fatal("cannot open bolt client")
@@ -58,7 +60,7 @@ func main() {
 
 	metadataRepository := bolt.NewMetadataRepository(boltClient, userRepository, "YouPod")
 
-	youtubeService, err := youtube.NewService()
+	youtubeService, err := youtube.NewService(opts.BoltRootDir)
 	if err != nil {
 		log.WithError(err).Fatal("cannot init youtube service")
 	}

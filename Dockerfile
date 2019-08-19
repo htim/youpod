@@ -1,24 +1,23 @@
-FROM golang:1.12.7-alpine3.10 as builder
+FROM golang:alpine as builder
 
-RUN mkdir -p /src
+RUN mkdir /youpod -p
 
-ADD . /src
+ADD . /youpod
 
-WORKDIR /src
+WORKDIR /youpod/cmd
 
-RUN apk add --no-cache git \
-    && go get -d ./... \
-    && apk del git
-RUN go build -o main .
+RUN go build -mod=vendor -o main .
 
-FROM alpine
+FROM alpine:edge
 
 RUN apk add --no-cache ffmpeg
-RUN apk add --no-cache youtube-dl
+RUN apk add --no-cache youtube-dl=2019.08.13-r0
+RUN apk add --no-cache ca-certificates
 
 RUN adduser -S -D -H -h /app appuser
 USER appuser
-COPY --from=builder /src/main /app/
+COPY --from=builder /youpod/cmd/main /app/
 
 WORKDIR /app
+
 CMD ["./main"]
