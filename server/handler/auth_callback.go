@@ -1,9 +1,11 @@
 package handler
 
 import (
+	context2 "context"
 	"fmt"
 	"github.com/htim/youpod"
 	log "github.com/sirupsen/logrus"
+	"golang.org/x/net/context"
 	"net/http"
 	"strconv"
 )
@@ -24,7 +26,7 @@ func (h *Handler) gdriveAuthCallback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := h.userService.FindUserByTelegramID(int64(telegramID))
+	user, err := h.userService.FindUserByTelegramID(context2.Background(), int64(telegramID))
 	if err != nil {
 		if err == youpod.ErrUserNotFound {
 			http.Error(w, "user not found", http.StatusNotFound)
@@ -45,7 +47,7 @@ func (h *Handler) gdriveAuthCallback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err = h.userService.SaveUser(user); err != nil {
+	if err = h.userService.SaveUser(context.Background(), user); err != nil {
 		log.WithError(err).Error("cannot update user")
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return

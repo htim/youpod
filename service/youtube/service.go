@@ -50,7 +50,7 @@ func (d *Service) Download(owner core.User, link string) (core.File, error) {
 
 	var stdout, stderr bytes.Buffer
 
-	output := fmt.Sprintf("/%s/%s.%%(ext)s", d.outputDir, id)
+	output := fmt.Sprintf("%s/%s.%%(ext)s", d.outputDir, id)
 
 	cmd := exec.Command("youtube-dl", "--extract-audio", "--audio-format", "mp3", "-o", output, "--write-info-json", link)
 	cmd.Stdout = &stdout
@@ -69,7 +69,7 @@ func (d *Service) Download(owner core.User, link string) (core.File, error) {
 
 	log.Debugf("downloading %s completed: %s", link, stdout.String())
 
-	infoJson, err := ioutil.ReadFile(fmt.Sprintf("/%s/%s.info.json", d.outputDir, id))
+	infoJson, err := ioutil.ReadFile(fmt.Sprintf("%s/%s.info.json", d.outputDir, id))
 	if err != nil {
 		return core.File{}, errors.Wrap(err, "cannot read info.json file")
 	}
@@ -79,7 +79,7 @@ func (d *Service) Download(owner core.User, link string) (core.File, error) {
 		return core.File{}, errors.Wrap(err, "cannot unmarshal info.json file")
 	}
 
-	f, err := os.Open(fmt.Sprintf("/%s/%s.mp3", d.outputDir, id))
+	f, err := os.Open(fmt.Sprintf("%s/%s.mp3", d.outputDir, id))
 	if err != nil {
 		return core.File{}, errors.Wrap(err, "cannot open downloaded file")
 	}
@@ -111,8 +111,8 @@ func (d *Service) Cleanup(f core.File) {
 	if err := f.Content.Close(); err != nil {
 		log.WithError(err).Debug("file is already closed")
 	}
-	mp3 := fmt.Sprintf("/%s/%s.%s", d.outputDir, f.TmpFileID, "mp3")
-	infoJson := fmt.Sprintf("/%s/%s.%s", d.outputDir, f.TmpFileID, "info.json")
+	mp3 := fmt.Sprintf("%s/%s.%s", d.outputDir, f.TmpFileID, "mp3")
+	infoJson := fmt.Sprintf("%s/%s.%s", d.outputDir, f.TmpFileID, "info.json")
 	if err := os.Remove(mp3); err != nil {
 		log.WithError(err).Debugf("cannot remove file: %s", mp3)
 	}
@@ -145,7 +145,7 @@ func thumbnailBase64(url string) (string, error) {
 	}
 
 	min := img.Bounds().Dx()
-	if img.Bounds().Dy() < img.Bounds().Dx() {
+	if img.Bounds().Dy() < min {
 		min = img.Bounds().Dy()
 	}
 

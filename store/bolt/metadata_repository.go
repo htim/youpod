@@ -1,6 +1,7 @@
 package bolt
 
 import (
+	"context"
 	"github.com/htim/youpod"
 	"github.com/htim/youpod/core"
 	"github.com/pkg/errors"
@@ -17,7 +18,7 @@ func NewMetadataRepository(client *Client, userService core.UserRepository, root
 	return &metadataRepository{client: client, userRepository: userService, rootFolder: rootFolder}
 }
 
-func (r *metadataRepository) GetFileMetadata(ID string) (m core.Metadata, err error) {
+func (r *metadataRepository) GetFileMetadata(ctx context.Context, ID string) (m core.Metadata, err error) {
 	var fm core.Metadata
 
 	err = r.client.db.View(func(tx *bolt.Tx) error {
@@ -40,7 +41,7 @@ func (r *metadataRepository) GetFileMetadata(ID string) (m core.Metadata, err er
 
 }
 
-func (r *metadataRepository) SaveFileMetadata(u core.User, m core.Metadata) (err error) {
+func (r *metadataRepository) SaveFileMetadata(ctx context.Context, m core.Metadata) (err error) {
 
 	if m.FileID == "" {
 		return errors.New("FileID must be specified")

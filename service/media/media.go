@@ -4,6 +4,7 @@ package media
 // Implements core.MediaService
 
 import (
+	"context"
 	"github.com/htim/youpod/core"
 	"github.com/pkg/errors"
 	"io"
@@ -38,7 +39,7 @@ func (s *Service) SaveFile(u core.User, f core.File) (string, error) {
 		return "", err
 	}
 
-	if err := s.metadataService.SaveFileMetadata(u, f.Metadata); err != nil {
+	if err := s.metadataService.SaveFileMetadata(context.Background(), f.Metadata); err != nil {
 		return "", errors.Wrapf(err, "cannot save file metadata (user ID '%s', file ID '%s')", u.Username, f.FileID)
 	}
 
@@ -55,8 +56,8 @@ func (s *Service) GetFileContent(user core.User, fileID string) (io.ReadSeeker, 
 	return rs, nil
 }
 
-func (s *Service) GetFileMetadata(user core.User, fileID string) (core.Metadata, error) {
-	metadata, err := s.metadataService.GetFileMetadata(fileID)
+func (s *Service) GetFileMetadata(user core.User, fileID string, ctx context.Context) (core.Metadata, error) {
+	metadata, err := s.metadataService.GetFileMetadata(nil, fileID)
 	if err != nil {
 		return core.Metadata{}, errors.Wrapf(err, "cannot load file metadata (user ID '%s', file ID '%s')", user.Username, fileID)
 	}

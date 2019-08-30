@@ -12,9 +12,9 @@ type OAuth2 interface {
 }
 
 type OAuth2Token struct {
-	AccessToken  string
-	RefreshToken string
-	Expiry       time.Time
+	AccessToken  string    `bson:"access_token"`
+	RefreshToken string    `bson:"refresh_token"`
+	Expiry       time.Time `bson:"expiry"`
 }
 
 func (t OAuth2Token) IsExpired() bool {

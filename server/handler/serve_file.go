@@ -2,10 +2,12 @@ package handler
 
 import (
 	"bytes"
+	context2 "context"
 	"encoding/base64"
 	"github.com/go-chi/chi"
 	"github.com/htim/youpod"
 	log "github.com/sirupsen/logrus"
+	"golang.org/x/net/context"
 	"io"
 	"net/http"
 	"time"
@@ -47,7 +49,7 @@ func (h *Handler) serveFile(w http.ResponseWriter, r *http.Request) {
 
 	} else {
 
-		user, err := h.userService.FindUserByUsername(username)
+		user, err := h.userService.FindUserByUsername(context2.Background(), username)
 
 		if err != nil {
 
@@ -61,7 +63,7 @@ func (h *Handler) serveFile(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		metadata, err := h.mediaService.GetFileMetadata(user, fileID)
+		metadata, err := h.mediaService.GetFileMetadata(user, fileID, context.Background())
 		if err != nil {
 			log.WithError(err).Error("failed to get rs metadata")
 			http.Error(w, InternalErrorMessage, http.StatusInternalServerError)
@@ -94,7 +96,7 @@ func (h *Handler) serveFileThumbnail(w http.ResponseWriter, r *http.Request) {
 	username := chi.URLParam(r, "username")
 	fileID := chi.URLParam(r, "fileID")
 
-	user, err := h.userService.FindUserByUsername(username)
+	user, err := h.userService.FindUserByUsername(context2.Background(), username)
 
 	if err != nil {
 
@@ -108,7 +110,7 @@ func (h *Handler) serveFileThumbnail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	metadata, err := h.mediaService.GetFileMetadata(user, fileID)
+	metadata, err := h.mediaService.GetFileMetadata(user, fileID, context.Background())
 	if err != nil {
 		log.WithError(err).Error("failed to get file metadata")
 		http.Error(w, InternalErrorMessage, http.StatusInternalServerError)

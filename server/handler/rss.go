@@ -1,6 +1,7 @@
 package handler
 
 import (
+	context2 "context"
 	"fmt"
 	"github.com/go-chi/chi"
 	"github.com/htim/youpod"
@@ -13,7 +14,7 @@ func (h *Handler) rssFeed(w http.ResponseWriter, r *http.Request) {
 
 	username := chi.URLParam(r, "username")
 
-	user, err := h.userService.FindUserByUsername(username)
+	user, err := h.userService.FindUserByUsername(context2.Background(), username)
 	if err != nil {
 
 		if err == youpod.ErrUserNotFound {

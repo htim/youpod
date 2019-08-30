@@ -159,7 +159,7 @@ func (c *Client) filesService(user core.User) (*drive.FilesService, error) {
 			return nil, errors.Wrapf(err, "cannot refresh google drive token for user: %s", user.Username)
 		}
 		user.GDriveToken = newToken
-		if err = c.userRepository.SaveUser(user); err != nil {
+		if err = c.userRepository.SaveUser(context.Background(), user); err != nil {
 			return nil, errors.Wrapf(err, "cannot update google drive token for user: %s", user.Username)
 		}
 	}

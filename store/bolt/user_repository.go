@@ -1,6 +1,7 @@
 package bolt
 
 import (
+	"context"
 	"github.com/htim/youpod"
 	"github.com/htim/youpod/core"
 	"github.com/pkg/errors"
@@ -33,7 +34,7 @@ func NewUserRepository(client *Client) (core.UserRepository, error) {
 	}, nil
 }
 
-func (s *userRepository) SaveUser(u core.User) error {
+func (s *userRepository) SaveUser(ctx context.Context, u core.User) error {
 	err := s.client.db.Update(func(tx *bolt.Tx) error {
 		bkt := tx.Bucket(userBucket)
 		if err := s.client.save(bkt, u.Username, u); err != nil {
@@ -56,7 +57,7 @@ func (s *userRepository) SaveUser(u core.User) error {
 	return nil
 }
 
-func (s *userRepository) FindUserByUsername(username string) (core.User, error) {
+func (s *userRepository) FindUserByUsername(ctx context.Context, username string) (core.User, error) {
 	var u core.User
 	err := s.client.db.Update(func(tx *bolt.Tx) error {
 		bkt := tx.Bucket(userBucket)
@@ -76,7 +77,7 @@ func (s *userRepository) FindUserByUsername(username string) (core.User, error) 
 	return u, nil
 }
 
-func (s *userRepository) FindUserByTelegramID(id int64) (core.User, error) {
+func (s *userRepository) FindUserByTelegramID(ctx context.Context, id int64) (core.User, error) {
 	var u core.User
 
 	err := s.client.db.View(func(tx *bolt.Tx) error {
@@ -107,8 +108,8 @@ func (s *userRepository) FindUserByTelegramID(id int64) (core.User, error) {
 	return u, nil
 }
 
-func (s *userRepository) AddFileToUser(u core.User, fileID string) error {
-	user, err := s.FindUserByUsername(u.Username)
+func (s *userRepository) AddFileToUser(ctx context.Context, u core.User, fileID string) error {
+	user, err := s.FindUserByUsername(ctx, u.Username)
 	if err != nil {
 		return errors.Wrap(err, "cannot find user")
 	}
@@ -116,7 +117,7 @@ func (s *userRepository) AddFileToUser(u core.User, fileID string) error {
 		user.Files = make([]string, 0)
 	}
 	user.Files = append(user.Files, fileID)
-	if err = s.SaveUser(user); err != nil {
+	if err = s.SaveUser(ctx, user); err != nil {
 		return errors.Wrap(err, "cannot update user")
 	}
 	return nil

@@ -31,7 +31,7 @@ func (s *service) UserFeed(user core.User) (string, error) {
 	fmm := make([]core.Metadata, 0)
 
 	for _, fid := range user.Files {
-		m, err := s.fileService.GetFileMetadata(fid)
+		m, err := s.fileService.GetFileMetadata(nil, fid)
 		if err == youpod.ErrMetadataNotFound {
 			continue
 		}

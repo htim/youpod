@@ -1,6 +1,7 @@
 package bot
 
 import (
+	context2 "context"
 	"fmt"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	"github.com/htim/youpod"
@@ -9,6 +10,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/rs/xid"
 	log "github.com/sirupsen/logrus"
+	"golang.org/x/net/context"
 	"strconv"
 )
 
@@ -70,15 +72,15 @@ func NewTelegram(
 	}, nil
 }
 
-func (b *Telegram) Run() {
+func (t *Telegram) Run() {
 	go func() {
-		for u := range b.updates {
+		for u := range t.updates {
 
 			telegramID := int64(u.Message.From.ID)
 			telegramUserName := u.Message.From.UserName
 			chatID := u.Message.Chat.ID
 
-			user, err := b.userService.FindUserByTelegramID(telegramID)
+			user, err := t.userService.FindUserByTelegramID(context2.Background(), telegramID)
 
 			if err != nil {
 
@@ -93,93 +95,93 @@ func (b *Telegram) Run() {
 						TelegramID: telegramID,
 					}
 
-					if err := b.userService.SaveUser(user); err != nil {
+					if err := t.userService.SaveUser(context.Background(), user); err != nil {
 						log.WithError(err).Error("failed to save new user")
-						b.SendInternalError(chatID)
+						t.SendInternalError(chatID)
 						continue
 					}
 					continue
 				}
 
 				log.WithError(err).Error("failed to get user")
-				b.SendInternalError(chatID)
+				t.SendInternalError(chatID)
 				continue
 			}
 
 			if user.GDriveToken.AccessToken == "" {
-				b.RequestGDriveAuth(u.Message.Chat.ID, b.googleDriveAuth.URL(strconv.FormatInt(telegramID, 10)))
+				t.RequestGDriveAuth(u.Message.Chat.ID, t.googleDriveAuth.URL(strconv.FormatInt(telegramID, 10)))
 				continue
 			}
 
 			if u.Message.Text != "" {
-				file, err := b.youtubeService.Download(user, u.Message.Text)
+				file, err := t.youtubeService.Download(user, u.Message.Text)
 				if err != nil {
 					log.WithError(err).WithField("user", user.Username).Error("failed to download youtube video")
-					b.Send(chatID, "Failed to download video. Please try again later")
+					t.Send(chatID, "Failed to download video. Please try again later")
 					continue
 				}
-				id, err := b.mediaService.SaveFile(user, file)
+				id, err := t.mediaService.SaveFile(user, file)
 				if err != nil {
 					log.WithError(err).WithField("user", user.Username).Error("failed to save media")
-					b.Send(chatID, "Failed to save file in your Google Drive. Please try again later")
+					t.Send(chatID, "Failed to save file in your Google Drive. Please try again later")
 					continue
 				}
-				if err = b.userService.AddFileToUser(user, id); err != nil {
+				if err = t.userService.AddFileToUser(context2.Background(), user, id); err != nil {
 					log.WithError(err).WithField("user", user.Username).Error("failed to update user file list")
-					b.SendInternalError(chatID)
+					t.SendInternalError(chatID)
 					continue
 				}
 
-				b.Send(chatID, "Alright, the podcast based on this video will be available soon")
-				b.Send(chatID, b.rssService.UserFeedUrl(user))
+				t.Send(chatID, "Alright, the podcast based on this video will be available soon")
+				t.Send(chatID, t.rssService.UserFeedUrl(user))
 
-				//b.youtubeService.Cleanup(file)
+				//t.youtubeService.Cleanup(file)
 			}
 		}
 	}()
 }
 
-func (b *Telegram) SuccessfulAuth(telegramID int64, message string, onSend func()) error {
-	user, err := b.userService.FindUserByTelegramID(telegramID)
+func (t *Telegram) SuccessfulAuth(telegramID int64, message string, onSend func()) error {
+	user, err := t.userService.FindUserByTelegramID(context2.Background(), telegramID)
 	if err != nil {
 		return errors.Wrap(err, "failed to find user")
 	}
-	b.Send(telegramID, message)
+	t.Send(telegramID, message)
 	onSend()
 
-	b.Send(telegramID, fmt.Sprintf("Your feed url: %s. Add it to your favourite podcast app", b.rssService.UserFeedUrl(user)))
+	t.Send(telegramID, fmt.Sprintf("Your feed url: %s. Add it to your favourite podcast app", t.rssService.UserFeedUrl(user)))
 	return nil
 }
 
-func (b *Telegram) Send(chatId int64, text string) {
+func (t *Telegram) Send(chatId int64, text string) {
 	message := tgbotapi.NewMessage(chatId, text)
-	if _, err := b.api.Send(message); err != nil {
+	if _, err := t.api.Send(message); err != nil {
 		log.WithError(err).Error("failed to send message to telegram")
 	}
 }
 
-func (b *Telegram) SendAndDo(chatId int64, text string, do func()) {
+func (t *Telegram) SendAndDo(chatId int64, text string, do func()) {
 	message := tgbotapi.NewMessage(chatId, text)
-	if _, err := b.api.Send(message); err != nil {
+	if _, err := t.api.Send(message); err != nil {
 		log.WithError(err).Error("failed to send message to telegram")
 	}
 	do()
 }
 
-func (b *Telegram) SendInternalError(chatId int64) {
+func (t *Telegram) SendInternalError(chatId int64) {
 	message := tgbotapi.NewMessage(chatId, "Internal error. Please try again later")
-	if _, err := b.api.Send(message); err != nil {
+	if _, err := t.api.Send(message); err != nil {
 		log.WithError(err).Error("failed to send message to telegram")
 	}
 }
 
-func (b *Telegram) RequestGDriveAuth(chatID int64, url string) {
+func (t *Telegram) RequestGDriveAuth(chatID int64, url string) {
 	btn := tgbotapi.NewInlineKeyboardButtonURL("login at Google Drive", url)
 
 	msg := tgbotapi.NewMessage(chatID, "Please login at Google Drive. It is used to save your uploaded audios")
 	msg.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup([]tgbotapi.InlineKeyboardButton{btn})
 
-	if _, err := b.api.Send(msg); err != nil {
+	if _, err := t.api.Send(msg); err != nil {
 		log.WithError(err).Error("failed to send login at Google Drive button")
 	}
 }
