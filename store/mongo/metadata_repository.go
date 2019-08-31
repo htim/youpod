@@ -22,7 +22,7 @@ func (r *metadataRepository) GetFileMetadata(ctx context.Context, ID string) (co
 
 	filter := bson.D{{"file_id", ID}}
 
-	if err := r.client.db.Collection("metadata").FindOne(
+	if err := r.client.db.Collection(metadata).FindOne(
 		ctx,
 		filter,
 	).Decode(&m); err != nil {
@@ -38,7 +38,7 @@ func (r *metadataRepository) GetFileMetadata(ctx context.Context, ID string) (co
 }
 
 func (r *metadataRepository) SaveFileMetadata(ctx context.Context, m core.Metadata) (err error) {
-	if _, err := r.client.db.Collection("metadata").InsertOne(ctx, m); err != nil {
+	if _, err := r.client.db.Collection(metadata).InsertOne(ctx, m); err != nil {
 		return errors.Wrap(err, "cannot save metadata")
 	}
 	return nil

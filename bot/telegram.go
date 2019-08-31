@@ -14,7 +14,6 @@ import (
 	"strconv"
 )
 
-//Telegram encapsulates all bot-related logic
 type Telegram struct {
 	api *tgbotapi.BotAPI
 
@@ -135,7 +134,7 @@ func (t *Telegram) Run() {
 				t.Send(chatID, "Alright, the podcast based on this video will be available soon")
 				t.Send(chatID, t.rssService.UserFeedUrl(user))
 
-				//t.youtubeService.Cleanup(file)
+				t.youtubeService.Cleanup(file)
 			}
 		}
 	}()

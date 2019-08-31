@@ -20,12 +20,12 @@ func NewUserRepository(client *Client) core.UserRepository {
 func (r *userRepository) SaveUser(ctx context.Context, u core.User) error {
 	filter := bson.D{{"username", u.Username}}
 	if _, err := r.findBy(ctx, filter); err == youpod.ErrUserNotFound {
-		if _, err := r.client.db.Collection("users").InsertOne(ctx, u); err != nil {
+		if _, err := r.client.db.Collection(users).InsertOne(ctx, u); err != nil {
 			return errors.Wrap(err, "cannot save user")
 		}
 		return nil
 	}
-	r.client.db.Collection("users").FindOneAndReplace(ctx, filter, u)
+	r.client.db.Collection(users).FindOneAndReplace(ctx, filter, u)
 	return nil
 }
 
@@ -54,13 +54,13 @@ func (r *userRepository) AddFileToUser(ctx context.Context, u core.User, fileID 
 	}
 	user.Files = append(user.Files, fileID)
 	filter := bson.D{{"username", u.Username}}
-	r.client.db.Collection("users").FindOneAndReplace(ctx, filter, user)
+	r.client.db.Collection(users).FindOneAndReplace(ctx, filter, user)
 	return nil
 }
 
 func (r *userRepository) findBy(ctx context.Context, filter bson.D) (core.User, error) {
 	var u core.User
-	if err := r.client.db.Collection("users").FindOne(ctx, filter).Decode(&u); err != nil {
+	if err := r.client.db.Collection(users).FindOne(ctx, filter).Decode(&u); err != nil {
 		if err == mongo.ErrNoDocuments {
 			return core.User{}, youpod.ErrUserNotFound
 		}
